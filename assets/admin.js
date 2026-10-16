@@ -32,7 +32,16 @@
       headers: opts.body ? { "Content-Type": "application/json" } : undefined,
       body: opts.body ? JSON.stringify(opts.body) : undefined
     }).then(function (r) {
-      return r.json().then(function (j) {
+      return r.text().then(function (text) {
+        var j = null;
+        try { j = text ? JSON.parse(text) : null; } catch { j = null; }
+        if (j === null) {
+          // Not JSON at all — this address has no API behind it
+          // (e.g. the static demo copy on GitHub Pages).
+          var gone = new Error("NO_BACKEND");
+          gone.noBackend = true;
+          throw gone;
+        }
         if (r.status === 401) { showLogin(); throw new Error("Session expired"); }
         if (!r.ok) throw new Error(j.error || "Request failed");
         return j;
@@ -44,6 +53,24 @@
       }
       throw err;
     });
+  }
+
+  /** Shown on static hosts (GitHub Pages demo): the admin needs the server. */
+  function showNoBackend() {
+    var login = document.getElementById("loginScreen");
+    if (!login) return;
+    login.classList.remove("hidden");
+    document.getElementById("appShell").classList.add("hidden");
+    login.innerHTML =
+      '<div class="login-card">' +
+      "<h1>Admin panel needs the server</h1>" +
+      '<p class="sub">This address serves a static demo copy of the website — ' +
+      "there is no database behind it, so signing in here is not possible.</p>" +
+      '<div class="alert info" style="margin:0 0 16px">Run the full version on your ' +
+      "computer with <b>START.command</b> (or <code>node server.js</code>), then open " +
+      "<b>http://localhost:3000/admin.html</b> and sign in there.</div>" +
+      '<a class="btn btn-gold" style="display:block;text-align:center" href="./">← Back to the demo website</a>' +
+      "</div>";
   }
 
   /** Shown when the Node server is not running or was stopped. */
@@ -1429,5 +1456,8 @@
     S.username = r.username;
     S.tab = location.hash.replace("#", "") || "dashboard";
     if (r.authenticated) start(); else showLogin();
-  }).catch(showLogin);
+  }).catch(function (err) {
+    if (err && err.noBackend) showNoBackend();
+    else showLogin();
+  });
 })();
