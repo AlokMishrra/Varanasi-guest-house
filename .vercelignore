@@ -21,5 +21,4 @@ README.txt
 
 # the local server is not a Vercel entrypoint (its basename would
 # flip the build into single-server mode)
-local/api/server.js
-local/lib
+local/
