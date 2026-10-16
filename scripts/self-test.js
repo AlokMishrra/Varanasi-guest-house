@@ -38,12 +38,13 @@ function fail(label, detail) {
 }
 const TEST_TIMEOUT_MS = 45000;
 
-async function check(label, fn) {
+async function check(label, fn, timeoutMs) {
+  const limit = timeoutMs || TEST_TIMEOUT_MS;
   try {
     const detail = await Promise.race([
       fn(),
       new Promise((_, rej) =>
-        setTimeout(() => rej(new Error("timed out after " + TEST_TIMEOUT_MS / 1000 + "s")), TEST_TIMEOUT_MS)
+        setTimeout(() => rej(new Error("timed out after " + limit / 1000 + "s")), limit)
       ),
     ]);
     pass(label, typeof detail === "string" ? detail : "");
@@ -240,6 +241,51 @@ async function apiTests() {
     assert(typeof img === "string" && /^https?:\/\/|\/uploads\//.test(img), "image is " + JSON.stringify(img));
     return img.slice(0, 58) + (img.length > 58 ? "…" : "");
   });
+
+  await check("deleting works in EVERY collection", async () => {
+    // Regression: the save path used to read a column that some tables do not
+    // have, so the "existing rows" lookup failed, deletions never ran, and the
+    // admin silently kept re-adding anything you tried to remove.
+    const content = await api("content");
+    assert(content.status === 200, "content read failed");
+
+    const spec = [
+      { key: "rooms", table: "rooms", make: (i) => ({ id: "deltest-room-" + i, name: "Del Test Room", image: "", guests: 2, bed: "x", amenities: [], price: 100, active: true }) },
+      { key: "gallery", table: "gallery", make: (i) => ({ id: "deltest-gal-" + i, image: "https://example.com/x.jpg", caption: "del" }) },
+      { key: "offers", table: "offers", make: (i) => ({ id: "deltest-offer-" + i, type: "card", kicker: "T", title: "Del Test Offer", description: "", buttonText: "Enquire", active: true }) },
+      { key: "travelPlans", table: "travel_plans", make: (i) => ({ id: "deltest-plan-" + i, name: "Del Test Plan", days: "1", pricePerPerson: 1, includes: [], excludes: [], active: true }) },
+      { key: "testimonials", table: "testimonials", make: (i) => ({ id: "deltest-testi-" + i, title: "Del Test", text: "", poster: "", video: "", active: true }) },
+      { key: "attractions", table: "attractions", make: (i) => ({ id: "deltest-attr-" + i, name: "Del Test Place", distance: "1 km", image: "", icon: "" }) },
+    ];
+
+    const stamp = Date.now();
+    // 1. add one to each collection and save
+    const withExtras = JSON.parse(JSON.stringify(content.body));
+    spec.forEach((s) => withExtras[s.key].push(s.make(stamp)));
+    withExtras.reviewsSection.reviews.push({ id: "deltest-rev-" + stamp, name: "Del Test Review", when: "now", rating: 5, text: "x" });
+    const addRes = await api("content", { method: "PUT", body: withExtras });
+    assert(addRes.status === 200, "add failed " + addRes.status);
+
+    let back = await api("content");
+    const addedIds = spec.map((s) => s.make(stamp).id).concat(["deltest-rev-" + stamp]);
+    const missing = addedIds.filter((id) => !JSON.stringify(back.body).includes(id));
+    assert(missing.length === 0, "not stored: " + missing.join(", "));
+
+    // 2. remove them all and save
+    const cleaned = await api("content");
+    const c = cleaned.body;
+    spec.forEach((s) => { c[s.key] = c[s.key].filter((x) => x.id !== s.make(stamp).id); });
+    c.reviewsSection.reviews = c.reviewsSection.reviews.filter((x) => x.id !== "deltest-rev-" + stamp);
+    const delRes = await api("content", { method: "PUT", body: c });
+    assert(delRes.status === 200, "delete save failed " + delRes.status);
+
+    // 3. confirm they are really gone from the database
+    back = await api("content");
+    const stillThere = addedIds.filter((id) => JSON.stringify(back.body).includes(id));
+    assert(stillThere.length === 0,
+      "still present after delete: " + stillThere.join(", "));
+    return spec.length + 1 + " collections";
+  }, 180000);
 
   await check("every collection saves", async () => {
     const content = JSON.parse(JSON.stringify(snapshot));
