@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — Siddhivinayak Temple Guesthouse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/assets/admin.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♜</text></svg>">
+<style>
+#needServer{display:none}
+html.needs-server #needServer{display:grid;place-items:center;min-height:100vh;padding:24px;background:linear-gradient(135deg,#0c0b09,#1a1610);font-family:'DM Sans',-apple-system,'Segoe UI',Arial,sans-serif}
+html.needs-server body > *:not(#needServer){display:none !important}
+#needServer .card{background:#fff;color:#22201c;border-radius:12px;padding:34px;width:min(560px,100%);border-top:4px solid #c89a3c;box-shadow:0 24px 70px rgba(0,0,0,.5);box-sizing:border-box}
+#needServer h1{font-family:Georgia,'Times New Roman',serif;font-size:24px;margin:0 0 8px;line-height:1.25}
+#needServer p{color:#6b6559;font-size:13px;line-height:1.75;margin:0 0 14px}
+#needServer code{display:block;background:#f4f1ea;border:1px solid #e3ddd0;border-radius:6px;padding:12px 14px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:#22201c;margin:10px 0 16px;word-break:break-word}
+#needServer code.inline{display:inline;padding:1px 6px;margin:0}
+#needServer ol{color:#6b6559;font-size:13px;line-height:1.9;padding-left:22px;margin:0 0 14px}
+#needServer a{color:#8e651d;font-weight:700}
+#needServer .foot{font-size:12px;color:#8a8378;margin:0}
+</style>
+<script>
+/* Opened directly from disk? The stylesheet and database are unreachable, so
+   show these instructions instead of an unstyled page. */
+if (location.protocol === "file:") {
+  document.documentElement.className = "needs-server";
+  window.VGH_OFFLINE = true;
+}
+</script>
+</head>
+<body>
+<div id="needServer"><div class="card">
+<h1>The admin panel needs the server running</h1>
+<p>You opened <code class="inline">admin.html</code> straight from the folder, so its stylesheet and your saved content could not load. This page only works through the local server.</p>
+<ol>
+<li>Open <b>Terminal</b></li>
+<li>Move into the project folder:<br><code>cd "Varanasi_Guest_House_Final 2"</code></li>
+<li>Start the site:<br><code>node server.js</code></li>
+<li>Then open <a href="http://localhost:3000/admin.html">http://localhost:3000/admin.html</a></li>
+</ol>
+<p class="foot">On a Mac you can also just double-click <b>START.command</b> in this folder &mdash; it starts the server and opens the browser for you.</p>
+</div></div>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-wrap">
+  <form class="login-card" id="loginForm">
+    <h1>Siddhivinayak Temple Guesthouse</h1>
+    <p class="sub">Admin panel — manage rooms, offers, plans, photos and bookings.</p>
+    <div id="loginError" class="alert err hidden"></div>
+    <label class="f"><span>Username</span><input type="text" id="loginUser" autocomplete="username" value="admin"></label>
+    <label class="f"><span>Password</span><input type="password" id="loginPass" autocomplete="current-password"></label>
+    <button class="btn btn-gold" style="width:100%;padding:11px" type="submit">Sign In</button>
+    <div class="login-hint"><b>Default login:</b> admin / varanasi123<br>Change it from <b>Settings → Admin access</b> after signing in.</div>
+  </form>
+</div>
+
+<!-- APP -->
+<div id="appShell" class="shell hidden">
+  <aside class="side">
+    <div class="side-brand">
+      <div class="mark">♜</div>
+      <div><b>Siddhivinayak Temple Guesthouse</b><span>Admin panel</span></div>
+    </div>
+
+    <div class="side-group">OVERVIEW</div>
+    <a class="nav-item" data-tab="dashboard"><span class="ic">◲</span> Dashboard</a>
+
+    <div class="side-group">CONTENT</div>
+    <a class="nav-item" data-tab="rooms"><span class="ic">▤</span> Rooms &amp; Rates <span class="badge" id="navCountRooms"></span></a>
+    <a class="nav-item" data-tab="gallery"><span class="ic">▦</span> Gallery <span class="badge" id="navCountGallery"></span></a>
+    <a class="nav-item" data-tab="offers"><span class="ic">✦</span> Seasonal Offers <span class="badge" id="navCountOffers"></span></a>
+    <a class="nav-item" data-tab="plans"><span class="ic">✈</span> Travel Plans <span class="badge" id="navCountPlans"></span></a>
+    <a class="nav-item" data-tab="testimonials"><span class="ic">▶</span> Testimonials <span class="badge" id="navCountTesti"></span></a>
+    <a class="nav-item" data-tab="pages"><span class="ic">✎</span> Page Sections</a>
+
+    <div class="side-group">GUESTS</div>
+    <a class="nav-item" data-tab="bookings"><span class="ic">▣</span> Online Bookings <span class="badge" id="navCountBookings"></span></a>
+    <a class="nav-item" data-tab="enquiries"><span class="ic">✉</span> Enquiries <span class="badge" id="navCountEnquiries"></span></a>
+
+    <div class="side-group">TOOLS</div>
+    <a class="nav-item" data-tab="media"><span class="ic">◈</span> Media Library</a>
+    <a class="nav-item" data-tab="settings"><span class="ic">⚙</span> Settings</a>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h2 id="tabTitle">Dashboard</h2>
+        <div class="sub" id="tabSub">Overview of your property</div>
+      </div>
+      <div class="top-actions">
+        <span class="store-chip-host" id="storageChip"></span>
+        <span class="dirty-dot hidden" id="dirtyDot">● Unsaved changes</span>
+        <a class="btn btn-sm" href="/" target="_blank">View Website ↗</a>
+        <button class="btn btn-sm" id="btnRefresh">Refresh</button>
+        <button class="btn btn-sm btn-red" id="btnLogout">Sign out</button>
+      </div>
+    </div>
+    <div class="content" id="tabBody"></div>
+  </div>
+
+  <div class="savebar" id="saveBar">
+    <span class="txt" id="saveLabel">Changes saved</span>
+    <button class="btn btn-gold btn-sm" id="btnSave">Save changes</button>
+  </div>
+</div>
+
+<div id="lightbox" class="lightbox" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:200;align-items:center;justify-content:center;padding:30px" onclick="if(event.target===this)this.style.display='none'">
+  <button class="close" style="position:absolute;right:20px;top:14px;background:none;border:0;color:#fff;font-size:28px;cursor:pointer" onclick="document.getElementById('lightbox').style.display='none'">×</button>
+  <img id="lightboxImg" style="max-width:94vw;max-height:88vh;object-fit:contain" alt="preview">
+</div>
+
+<div id="adminToast" style="position:fixed;right:20px;top:78px;z-index:300;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+
+<script src="/assets/admin.js"></script>
+</body>
+</html>

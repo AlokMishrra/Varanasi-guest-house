@@ -1,0 +1,13 @@
+# Secrets — the Supabase keys live here. NEVER commit this file.
+.env
+
+# Local mirrors of the database (regenerated automatically, may hold guest data)
+data/
+uploads/
+logs/
+
+# Runtime / OS
+node_modules/
+public/
+.DS_Store
+*.log
