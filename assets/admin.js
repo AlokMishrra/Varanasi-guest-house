@@ -363,20 +363,22 @@
       input.addEventListener("change", function () {
         if (!input.files || !input.files[0]) return;
         var path = input.dataset.upload;
-        var kind = input.dataset.kind || (/video/.test(input.accept) ? "video" : "image");
-        readFile(input.files[0], function (dataUrl) {
-          setPath(S.data, path, { dataUrl: dataUrl, name: input.files[0].name });
+        var file = input.files[0];
+        readFile(file).then(function (dataUrl) {
+          setPath(S.data, path, { dataUrl: dataUrl, name: file.name });
           markDirty();
           input.value = "";
-          toast("Uploaded — click Save changes to publish", "warn");
-          // re-render just this block
+          toast("Uploaded — press Save changes to publish", "warn");
+          // re-render just this block so the preview updates
           var holder = input.closest(".imgfield");
           var wrapper = holder.parentNode;
           var labelHtml = wrapper.innerHTML;
           var idx = labelHtml.indexOf('<div class="imgfield"');
-          var rebuilt = '<div class="f" style="margin-bottom:14px">' + labelHtml.slice(idx);
-          wrapper.outerHTML = rebuilt;
+          wrapper.outerHTML = '<div class="f" style="margin-bottom:14px">' + labelHtml.slice(idx);
           bindLive();
+        }).catch(function (err) {
+          input.value = "";
+          toast(err.message, "err");
         });
       });
     });
@@ -410,10 +412,70 @@
     });
   }
 
-  function readFile(file, cb) {
-    var fr = new FileReader();
-    fr.onload = function () { cb(fr.result); };
-    fr.readAsDataURL(file);
+  /**
+   * Prepare a file for upload.
+   *
+   * Photos are re-encoded in the browser (max 2000px, JPEG q0.82) before
+   * they are sent. A 6 MB phone photo becomes roughly 400 KB, which keeps
+   * uploads far below the hosting request limit and makes the site load
+   * much faster. Anything already small is sent untouched.
+   */
+  var MAX_IMAGE_BYTES = 4 * 1024 * 1024;   // hard ceiling after compression
+  var COMPRESS_ABOVE = 400 * 1024;
+  var IMAGE_MAX_EDGE = 2000;
+
+  function readFile(file) {
+    if (!/^image\//.test(file.type)) {
+      if (file.size > MAX_IMAGE_BYTES) {
+        return Promise.reject(new Error(
+          "\"" + file.name + "\" is " + Math.round(file.size / 1048576) + " MB, too large to upload " +
+          "(limit 4 MB). Please compress it or upload it directly to Supabase Storage."
+        ));
+      }
+      return readAsDataUrl(file);
+    }
+
+    return readAsDataUrl(file).then(function (dataUrl) {
+      if (file.size <= COMPRESS_ABOVE) return dataUrl;
+      return shrinkImage(dataUrl, file.type);
+    });
+  }
+
+  function readAsDataUrl(file) {
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { resolve(fr.result); };
+      fr.onerror = function () { reject(new Error("Could not read " + file.name)); };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  function shrinkImage(dataUrl, originalType) {
+    return new Promise(function (resolve) {
+      var img = new Image();
+      img.onload = function () {
+        var w = img.naturalWidth || img.width;
+        var h = img.naturalHeight || img.height;
+        var scale = Math.min(1, IMAGE_MAX_EDGE / Math.max(w, h));
+        if (scale === 1) return resolve(dataUrl); // already small enough on disk
+
+        var canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(w * scale));
+        canvas.height = Math.max(1, Math.round(h * scale));
+        var ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+        var out;
+        try {
+          out = canvas.toDataURL("image/jpeg", 0.82);
+        } catch (e) {
+          out = dataUrl; // canvas blocked (rare): send the original
+        }
+        resolve(out);
+      };
+      img.onerror = function () { resolve(dataUrl); };
+      img.src = dataUrl;
+    });
   }
 
   /* -------------------------------------------------------- media picker */
@@ -513,11 +575,37 @@
       check(!/replace|placeholder/i.test(JSON.stringify(d.testimonials)), "Add real guest clips", "Testimonials") +
       check(!/placeholder/i.test((d.offersSection || {}).note || ""), "Confirm real offer terms", "Offers") +
       "</div></div>" +
+      stockPanel() +
       '<div class="card"><div class="card-head"><h3>Booking pipeline</h3></div><div class="card-body">' +
       pipelineBars() +
       "</div></div>" +
       "</div>"
     );
+  }
+
+  function stockPanel() {
+    var items = stockReport();
+    if (!items.length) {
+      return '<div class="card"><div class="card-head"><h3>Photography</h3>' +
+        '<span class="hint">every image is your own</span></div><div class="card-body">' +
+        '<div class="alert ok" style="margin:0">No demo or stock photos left — the website uses only images you uploaded.</div>' +
+        "</div></div>";
+    }
+    var groups = {};
+    items.forEach(function (it) {
+      var tab = it.where.split("—")[0].split("#")[0].trim();
+      (groups[tab] = groups[tab] || []).push(it);
+    });
+    return '<div class="card"><div class="card-head"><h3>Photography still to replace</h3>' +
+      '<span class="hint">' + items.length + " demo image(s) — upload your own from the tabs on the left</span></div>" +
+      '<div class="card-body">' +
+      Object.keys(groups).map(function (k) {
+        return '<div style="margin-bottom:12px"><b style="font-size:12px">' + esc(k) + "</b><div style=\"font-size:11px;color:#7d766a;margin-top:4px;line-height:1.8\">" +
+          groups[k].map(function (it) { return esc(it.where); }).join("<br>") + "</div></div>";
+      }).join("") +
+      '<div class="alert info" style="margin:0">Rooms, Gallery, Offers, Testimonials, Page Sections → upload a file and press Save changes. ' +
+      "Images are compressed in your browser before upload, so large phone photos work.</div>" +
+      "</div></div>";
   }
 
   function check(done, label, where) {
@@ -565,6 +653,7 @@
     return (
       '<div class="item" draggable="true" data-room-idx="' + i + '">' +
       '<div class="item-head"><span class="num">' + (i + 1) + '</span><span class="drag">⠿</span>' +
+      stockBadge(room.image) +
       (room.image ? '<img class="mini-thumb" src="' + esc(room.image) + '">' : "") +
       "<b>" + esc(room.name || "Untitled room") + "</b>" +
       '<span class="pill ' + (room.active === false ? "cancelled" : "confirmed") + '">' + (room.active === false ? "Hidden" : "Live") + "</span>" +
@@ -623,10 +712,57 @@
     );
   }
 
+  /* ------------------------------------------------- stock photo checks */
+
+  /**
+   * True when an image is still one of the demo/stock photos rather than the
+   * property's own photography. Flagged in the admin so it is obvious what
+   * still needs replacing before launch.
+   */
+  function isStock(url) {
+    if (!url) return false;
+    return /unsplash|pexels|placeholder|images\.picsum|source\.unsplash/i.test(String(url));
+  }
+  function stockBadge(url, label) {
+    return isStock(url) ? '<span class="pill stock">' + esc(label || "stock photo") + "</span>" : "";
+  }
+  /** Everything on the site still using a demo image. */
+  function stockReport() {
+    var items = [];
+    (S.data.rooms || []).forEach(function (r) {
+      if (isStock(r.image)) items.push({ where: "Room — " + (r.name || "?"), url: r.image });
+    });
+    (S.data.gallery || []).forEach(function (g, i) {
+      if (isStock(g.image)) items.push({ where: "Gallery photo #" + (i + 1) + (g.caption ? " (" + g.caption + ")" : ""), url: g.image });
+    });
+    (S.data.offers || []).forEach(function (o) {
+      if (isStock(o.image)) items.push({ where: "Offer — " + (o.title || "?"), url: o.image });
+      if (isStock(S.data.offersSection && S.data.offersSection.backgroundImage))
+        items.push({ where: "Offers section background", url: S.data.offersSection.backgroundImage });
+    });
+    (S.data.testimonials || []).forEach(function (t, i) {
+      if (isStock(t.poster)) items.push({ where: "Testimonial #" + (i + 1) + " poster", url: t.poster });
+    });
+    (S.data.attractions || []).forEach(function (a) {
+      if (isStock(a.image)) items.push({ where: "Attraction — " + (a.name || "?"), url: a.image });
+    });
+    (S.data.travelPlans || []).forEach(function (p, i) {
+      if (isStock(p.image)) items.push({ where: "Travel plan — " + (p.name || "?"), url: p.image });
+    });
+    if (isStock(S.data.aboutSection && S.data.aboutSection.image))
+      items.push({ where: "About us photo", url: S.data.aboutSection.image });
+    if (isStock(S.data.gallerySection && S.data.gallerySection.backgroundImage))
+      items.push({ where: "Gallery background", url: S.data.gallerySection.backgroundImage });
+    if (isStock(S.data.locationSection && S.data.locationSection.backgroundImage))
+      items.push({ where: "Location banner", url: S.data.locationSection.backgroundImage });
+    return items;
+  }
+
   function galleryCell(item, i) {
     return (
       '<div class="gcell" draggable="true" data-gal-idx="' + i + '">' +
       (item.image ? '<img src="' + esc(item.image) + '" onclick="previewImage(this.src)">' : '<div style="height:105px;display:grid;place-items:center;color:#aaa;font-size:10px;background:#f4f2ec">no image</div>') +
+      (isStock(item.image) ? '<span class="stock-flag">stock photo</span>' : "") +
       '<div style="padding:8px;display:flex;flex-direction:column;gap:6px">' +
       '<div class="row tight" style="flex-wrap:nowrap"><span class="drag" style="cursor:grab;font-size:15px;color:#aaa">⠿</span>' +
       '<input type="text" data-path="gallery.' + i + '.caption" value="' + esc(item.caption || "") + '" placeholder="Caption">' +
@@ -1378,27 +1514,41 @@
   }
 
   function uploadFiles(files, done) {
-    var pending = files.length;
+    // FileList is not an Array and has no forEach in every browser.
+    var list = Array.prototype.slice.call(files || []);
+    var pending = list.length;
     var box = $("#uploadProgress");
-    files.forEach(function (f) {
-      readFile(f, function (dataUrl) {
-        api("media", { method: "POST", body: { file: { dataUrl: dataUrl, name: f.name } } })
-          .then(function (r) {
-            if (S.tab === "gallery") S.data.gallery.push({ id: uid("gal"), image: r.urls[0], caption: "" });
-            if (--pending === 0) {
-              if (box) box.textContent = "";
-              toast(files.length + " file(s) uploaded — remember to Save changes");
-              markDirty();
-              done();
-            }
-          })
-          .catch(function (err) {
-            toast("Upload failed: " + f.name, "err");
-            if (--pending === 0) done();
-          });
-        if (box) box.textContent = "Uploading " + f.name + "…";
-      });
+    var failed = 0;
+
+    if (!pending) return done();
+
+    list.forEach(function (f) {
+      if (box) box.textContent = "Preparing " + f.name + "…";
+
+      readFile(f)
+        .then(function (dataUrl) {
+          if (box) box.textContent = "Uploading " + f.name + "…";
+          return api("media", { method: "POST", body: { file: { dataUrl: dataUrl, name: f.name } } });
+        })
+        .then(function (r) {
+          if (S.tab === "gallery" && r.urls && r.urls[0]) {
+            S.data.gallery.push({ id: uid("gal"), image: r.urls[0], caption: "" });
+          }
+          if (--pending === 0) finish();
+        })
+        .catch(function (err) {
+          failed++;
+          toast("Upload failed — " + (err && err.message ? err.message : f.name), "err");
+          if (--pending === 0) finish();
+        });
     });
+
+    function finish() {
+      if (box) box.textContent = "";
+      if (failed === 0) toast(list.length + " file(s) uploaded — press Save changes to publish");
+      markDirty();
+      done();
+    }
   }
 
   /* ----------------------------------------------------- drag reorder */

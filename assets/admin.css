@@ -165,3 +165,8 @@ tr:hover td{background:#fcfbf7}
   .content{padding:16px 14px 70px}
   .topbar{padding:12px 14px}
 }
+/* stock-photo flags */
+.pill.stock{background:#fdf1e3;color:#9a6a12;border:1px solid #edd7b4}
+.stock-flag{position:absolute;top:6px;left:6px;background:rgba(20,16,8,.82);color:#e8b95f;font-size:8.5px;font-weight:800;letter-spacing:.6px;padding:3px 7px;border-radius:3px}
+.gcell{position:relative}
+.item-head .pill.stock{margin-left:2px}
