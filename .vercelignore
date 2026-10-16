@@ -18,3 +18,6 @@ README.txt
 # never deploy keys
 .env
 .env.example
+# local server must not reach Vercel: its presence flips the build
+# into single-server mode (all traffic -> one crashing function)
+local-server.js
