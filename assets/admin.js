@@ -320,6 +320,7 @@
     $("#tabBody").innerHTML = TABS[tab].render();
     $("#tabBody").scrollIntoView({ block: "start" });
     bindLive();
+    initDropZones();
     updateNavCounts();
     var chip = $("#storageChip");
     if (chip) chip.innerHTML = storageChip();
@@ -1149,11 +1150,18 @@
   function viewMedia() {
     return (
       '<div class="card"><div class="card-head"><h3>Upload files</h3>' +
-      '<span class="hint">Photos and video clips saved under /uploads</span></div>' +
-      '<div class="card-body"><div class="row">' +
-      '<label class="btn btn-gold" style="display:inline-block">Choose images / videos<input type="file" id="mediaUpload" accept="image/*,video/*" multiple style="display:none"></label>' +
-      '<span class="help" style="margin:0">Large videos are stored as-is. Keep testimonial clips under 20&nbsp;MB.</span>' +
-      "</div><div id='uploadProgress' class='help' style='margin-top:10px'></div></div></div>" +
+      '<span class="hint">Photos and video clips saved in cloud storage</span></div>' +
+      '<div class="card-body">' +
+      '<div class="dropzone" id="mediaDrop">' +
+      '<div style="font-size:26px;color:#c3b79c">⬆</div>' +
+      "<b>Drop photos or videos here</b>" +
+      '<div class="help" style="margin-top:4px">or</div>' +
+      '<label class="btn btn-gold" style="display:inline-block;margin-top:8px">Choose files' +
+      '<input type="file" id="mediaUpload" accept="image/*,video/*" multiple style="display:none"></label>' +
+      "</div>" +
+      '<div class="help" style="margin-top:10px">Photos are compressed in your browser before upload, so large phone pictures work. ' +
+      "Videos are stored as-is — keep testimonial clips under 20&nbsp;MB.</div>" +
+      "<div id='uploadProgress' class='help' style='margin-top:10px'></div></div></div>" +
       '<div class="card"><div class="card-head"><h3>Library</h3><span class="hint" id="mediaCount">Loading…</span></div>' +
       '<div class="card-body"><div class="media-grid" id="mediaGrid"><div class="empty">Loading…</div></div></div></div>'
     );
@@ -1494,10 +1502,11 @@
       uploadFiles(e.target.files, function () { render(); });
       return;
     }
-    if (e.target.id === "mediaUpload" && e.target.files.length) {
-      uploadFiles(e.target.files, loadMedia);
+if (e.target.id === "mediaUpload" && e.target.files.length) {
+      uploadFiles(e.target.files, function () { loadMedia(); });
       return;
     }
+
 
     var bs = e.target.dataset.bstatus;
     if (bs) {
@@ -1552,6 +1561,35 @@
   }
 
   /* ----------------------------------------------------- drag reorder */
+  /* ------------------------------------------------- drag & drop uploads */
+
+  function initDropZones() {
+    var zone = $("#mediaDrop");
+    if (!zone) return;
+
+    ["dragenter", "dragover"].forEach(function (evt) {
+      zone.addEventListener(evt, function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        zone.classList.add("over");
+      });
+    });
+    ["dragleave"].forEach(function (evt) {
+      zone.addEventListener(evt, function (e) {
+        e.preventDefault();
+        zone.classList.remove("over");
+      });
+    });
+    zone.addEventListener("drop", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      zone.classList.remove("over");
+      if (e.dataTransfer && e.dataTransfer.files.length) {
+        uploadFiles(e.dataTransfer.files, function () { loadMedia(); });
+      }
+    });
+  }
+
   function initDrag() {
     var dragging = null;
     document.addEventListener("dragstart", function (e) {
