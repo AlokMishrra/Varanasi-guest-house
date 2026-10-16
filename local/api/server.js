@@ -12,7 +12,7 @@ const fsp = fs.promises;
 const path = require("path");
 const { URL } = require("url");
 
-const { handleApi, sendJson } = require("./lib/api.js");
+const { handleApi, sendJson } = require("../../lib/api.js");
 
 /* --------------------------------------------------------------- guards */
 
@@ -30,7 +30,7 @@ process.on("uncaughtException", (err) => {
   }
 });
 
-const ROOT = __dirname;
+const ROOT = path.join(__dirname, "..", "..");
 const PUBLIC_DIR = path.join(ROOT, "public");
 const UPLOAD_DIR = path.join(ROOT, "uploads");
 fs.mkdirSync(PUBLIC_DIR, { recursive: true });
