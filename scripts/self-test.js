@@ -276,7 +276,7 @@ async function apiTests() {
   });
 
   await check("reset to demo restores original content", async () => {
-    const r = await api("content/reset", { method: "POST" });
+    const r = await api("content?action=reset", { method: "POST" });
     assert(r.status === 200, "status " + r.status);
     const back = await api("content");
     assert(back.body.rooms[0].name === "Deluxe Room", "first room is " + back.body.rooms[0].name);
@@ -316,7 +316,7 @@ async function apiTests() {
   });
 
   await check("booking can be deleted", async () => {
-    const r = await api("bookings/" + encodeURIComponent(bookingId), { method: "DELETE" });
+    const r = await api("bookings?id=" + encodeURIComponent(bookingId), { method: "DELETE" });
     assert(r.status === 200, "status " + r.status);
     const list = await api("bookings");
     assert(!list.body.items.some((b) => b.id === bookingId), "still listed");
@@ -347,7 +347,7 @@ async function apiTests() {
   });
 
   await check("enquiry can be deleted", async () => {
-    await api("enquiries/" + encodeURIComponent(enquiryId), { method: "DELETE" });
+    await api("enquiries?id=" + encodeURIComponent(enquiryId), { method: "DELETE" });
     const list = await api("enquiries");
     assert(!list.body.items.some((e) => e.id === enquiryId), "still listed");
   });
@@ -392,7 +392,7 @@ async function apiTests() {
     assert(r.status === 200, "status " + r.status);
     const back = await api("content");
     assert(back.body.rooms[0].name === "Restored Room", "restore did not apply");
-    await api("content/reset", { method: "POST" });
+    await api("content?action=reset", { method: "POST" });
   });
 
   group("7. Media");
@@ -422,7 +422,7 @@ async function apiTests() {
 
   await check("media file can be deleted", async () => {
     const name = decodeURIComponent(mediaUrl.split("/").pop());
-    const r = await api("media/" + encodeURIComponent(name), { method: "DELETE" });
+    const r = await api("media?name=" + encodeURIComponent(name), { method: "DELETE" });
     assert(r.status === 200, "status " + r.status);
     const list = await api("media");
     assert(!list.body.items.some((i) => i.name === name), "still listed");
@@ -494,7 +494,7 @@ async function apiTests() {
   });
 
   /* restore clean demo state for the browser tests */
-  await api("content/reset", { method: "POST" });
+  await api("content?action=reset", { method: "POST" });
 }
 
 /* ======================================================== browser tests */
@@ -1341,7 +1341,7 @@ async function browserTests() {
   group("12. Cleanup");
 
   await check("demo content restored for handoff", async () => {
-    await api("content/reset", { method: "POST" });
+    await api("content?action=reset", { method: "POST" });
     const live = await api("content");
     assert(live.body.rooms.length === 3, "rooms = " + live.body.rooms.length);
     assert(/siddhivinayak/i.test(live.body.site.brandName), "brand = " + live.body.site.brandName);

@@ -170,10 +170,27 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
   });
 
   await check("booking deletes", async () => {
-    const r = await call("DELETE", "/api/bookings/" + encodeURIComponent(bookingId), { cookie });
+    const r = await call("DELETE", "/api/bookings?id=" + encodeURIComponent(bookingId), { cookie });
     assert(r.status === 200, "status " + r.status);
     const list = await call("GET", "/api/bookings", { cookie });
     assert(!list.body.items.some((b) => b.id === bookingId), "still listed");
+  });
+
+  await check("delete accepts the query form used in production", async () => {
+    const created = await call("POST", "/api/submit", {
+      body: { kind: "booking", name: "Query Route Test", phone: "9000000013", room: "Deluxe Room" },
+    });
+    const id = created.body.id;
+    const r = await call("DELETE", "/api/bookings?id=" + encodeURIComponent(id), { cookie });
+    assert(r.status === 200 && r.body.ok, "query form failed: " + JSON.stringify(r.body));
+    const list = await call("GET", "/api/bookings", { cookie });
+    assert(!list.body.items.some((b) => b.id === id), "record survived");
+    return "DELETE /api/bookings?id=…";
+  });
+
+  await check("reset to demo accepts the query form", async () => {
+    const r = await call("POST", "/api/content?action=reset", { cookie });
+    assert(r.status === 200 && r.body.ok, "reset failed: " + JSON.stringify(r.body));
   });
 
   await check("stats compute", async () => {
@@ -189,7 +206,7 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     const list = await call("GET", "/api/media", { cookie });
     assert(list.body.items.some((i) => i.url === up.body.urls[0]), "not listed");
     const name = decodeURIComponent(up.body.urls[0].split("/").pop());
-    const del = await call("DELETE", "/api/media/" + encodeURIComponent(name), { cookie });
+    const del = await call("DELETE", "/api/media?name=" + encodeURIComponent(name), { cookie });
     assert(del.status === 200, "delete failed");
     return up.body.urls[0].slice(0, 60) + "…";
   });

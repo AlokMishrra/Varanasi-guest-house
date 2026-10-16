@@ -1331,7 +1331,7 @@
     /* bookings */
     if (t.dataset.delbooking) {
       if (!confirm("Delete this booking permanently?")) return;
-      api("bookings/" + encodeURIComponent(t.dataset.delbooking), { method: "DELETE" })
+      api("bookings?id=" + encodeURIComponent(t.dataset.delbooking), { method: "DELETE" })
         .then(function () { toast("Booking deleted"); api("bookings").then(function (r) { S.bookings = r.items; render(); }); });
       return;
     }
@@ -1340,7 +1340,7 @@
     /* enquiries */
     if (t.dataset.delenquiry) {
       if (!confirm("Delete this enquiry permanently?")) return;
-      api("enquiries/" + encodeURIComponent(t.dataset.delenquiry), { method: "DELETE" })
+      api("enquiries?id=" + encodeURIComponent(t.dataset.delenquiry), { method: "DELETE" })
         .then(function () { toast("Enquiry deleted"); api("enquiries").then(function (r) { S.enquiries = r.items; render(); }); });
       return;
     }
@@ -1348,7 +1348,7 @@
     /* media */
     if (t.dataset.delmedia) {
       if (!confirm("Delete this file permanently? It may still be used on the site.")) return;
-      api("media/" + encodeURIComponent(t.dataset.delmedia), { method: "DELETE" })
+      api("media?name=" + encodeURIComponent(t.dataset.delmedia), { method: "DELETE" })
         .then(function () { toast("File deleted"); loadMedia(); });
       return;
     }
@@ -1388,7 +1388,7 @@
     }
     if (t.id === "btnReset") {
       if (!confirm("Reset ALL website content back to the original demo text? Bookings and enquiries are kept.")) return;
-      api("content/reset", { method: "POST" }).then(function () {
+      api("content?action=reset", { method: "POST" }).then(function () {
         toast("Content reset to demo"); markDirty(false); loadAll();
       });
       return;
