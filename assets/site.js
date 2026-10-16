@@ -2,9 +2,10 @@
 (function () {
   "use strict";
 
-  var S = {
+    var S = {
     data: null,
-    submitting: false
+    submitting: false,
+    demo: false   /* true when running from the static snapshot (no server) */
   };
 
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
@@ -526,6 +527,7 @@
   }
 
   async function submitBooking() {
+    if (S.demo) return showToast("This is a demo preview. Bookings go live on the hosted server.", true);
     if (S.submitting) return;
     const name = $("#name").value.trim();
     const phone = $("#phone").value.trim();
@@ -596,6 +598,7 @@
   };
 
   window.submitPlanEnquiry = async function () {
+    if (S.demo) return showToast("This is a demo preview. Enquiries go live on the hosted server.", true);
     if (S.submitting) return;
     var name = $("#planName").value.trim();
     var phone = $("#planPhone").value.trim();
@@ -730,15 +733,29 @@
     });
 
     fetch("/api/content")
-      .then(function (r) { return r.json(); })
+      .then(function (r) { if (!r.ok) throw new Error("no api"); return r.json(); })
       .then(function (data) {
         S.data = data;
+        S.demo = false;
         renderAll();
         window.VGH_DATA = data;
       })
       .catch(function () {
-        $("#app").innerHTML =
-          '<div class="boot-loading">Could not load site content. Please start the server with <code>node server.js</code> and open <a href="http://localhost:3000/">http://localhost:3000/</a>.</div>';
+        // No server (static host like GitHub Pages): fall back to the
+        // committed snapshot. The site becomes a read-only showcase.
+        fetch("assets/content.snapshot.json")
+          .then(function (r) { if (!r.ok) throw new Error("no snapshot"); return r.json(); })
+          .then(function (data) {
+            S.data = data;
+            S.demo = true;
+            renderAll();
+            window.VGH_DATA = data;
+            showToast("Demo preview — bookings need the live server.");
+          })
+          .catch(function () {
+            $("#app").innerHTML =
+              '<div class="boot-loading">Could not load site content. Please start the server with <code>node server.js</code> and open <a href="http://localhost:3000/">http://localhost:3000/</a>.</div>';
+          });
       });
   });
 })();
