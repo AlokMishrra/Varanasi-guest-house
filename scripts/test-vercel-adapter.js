@@ -113,6 +113,37 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     assert(r.body.authenticated === true, JSON.stringify(r.body));
   });
 
+  await check("session works from a *different server instance*", async () => {
+    // Simulates Vercel routing the next request to a cold instance:
+    // purge every lib/api/auth module so nothing is shared in memory.
+    for (const key of Object.keys(require.cache)) {
+      if (/\/lib\/(auth|api|store|supabase)\.js$/.test(key)) delete require.cache[key];
+    }
+    const r = await call("GET", "/api/bookings", { cookie });
+    assert(r.status === 200, "cross-instance request returned " + r.status);
+    assert(Array.isArray(r.body.items), "unexpected body");
+    return r.body.items.length + " bookings readable from a cold instance";
+  });
+
+  await check("a token from another instance is accepted, tampering is not", async () => {
+    for (const key of Object.keys(require.cache)) {
+      if (/\/lib\/(auth|api|store|supabase)\.js$/.test(key)) delete require.cache[key];
+    }
+    const login = await call("POST", "/api/session", { body: { username: "admin", password: "varanasi123" } });
+    const token = login.body.token;
+    assert(typeof token === "string" && token.includes("."), "token is not self-describing");
+
+    for (const key of Object.keys(require.cache)) {
+      if (/\/lib\/(auth|api|store|supabase)\.js$/.test(key)) delete require.cache[key];
+    }
+    const good = await call("GET", "/api/bookings", { cookie: "vgh_session=" + token });
+    assert(good.status === 200, "valid token rejected by a fresh instance: " + good.status);
+
+    const bad = await call("GET", "/api/bookings", { cookie: "vgh_session=" + token.slice(0, -3) + "zzz" });
+    assert(bad.status === 401, "tampered token was accepted (" + bad.status + ")");
+    return "valid accepted, tampered rejected";
+  });
+
   await check("content reads", async () => {
     const r = await call("GET", "/api/content");
     assert(r.status === 200, "status " + r.status);
@@ -163,11 +194,41 @@ const assert = (c, m) => { if (!c) throw new Error(m); };
     return up.body.urls[0].slice(0, 60) + "…";
   });
 
-  await check("logout clears the session", async () => {
+  await check("logout clears the session cookie", async () => {
+    // Sessions are stateless, so signing out works by expiring the cookie —
+    // there is no server-side list to revoke against.
     const r = await call("DELETE", "/api/session", { cookie });
     assert(r.status === 200, "status " + r.status);
-    const back = await call("GET", "/api/bookings", { cookie });
-    assert(back.status === 401, "old cookie still works (" + back.status + ")");
+    const setCookie = String(r.headers["set-cookie"] || "");
+    assert(/Max-Age=0/i.test(setCookie), "cookie not expired: " + setCookie);
+    return "cookie expired";
+  });
+
+  await check("changing the password invalidates outstanding sessions", async () => {
+    const fresh = await call("POST", "/api/session", { body: { username: "admin", password: "varanasi123" } });
+    const tok = fresh.body.token;
+    const hold = "vgh_session=" + tok;
+    const before = await call("GET", "/api/bookings", { cookie: hold });
+    assert(before.status === 200, "token should work before the change");
+
+    const changed = await call("POST", "/api/credentials", {
+      cookie: hold,
+      body: { currentPassword: "varanasi123", newPassword: "temp" + Date.now().toString(36) },
+    });
+    assert(changed.status === 200, "password change failed: " + JSON.stringify(changed.body));
+
+    for (const key of Object.keys(require.cache)) {
+      if (/\/lib\/(auth|api|store|supabase)\.js$/.test(key)) delete require.cache[key];
+    }
+    const after = await call("GET", "/api/bookings", { cookie: hold });
+    assert(after.status === 401, "old token still valid after a password change (" + after.status + ")");
+
+    // restore
+    const newPass = "temp" + Math.floor(Date.now() / 1000) % 1e9;
+    void newPass;
+    const store = require("../lib/store.js");
+    await store.saveAuth({ username: "admin", password: "varanasi123" });
+    return "old session rejected, password restored";
   });
 
   await check("unknown endpoint 404s as JSON", async () => {
