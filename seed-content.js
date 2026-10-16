@@ -2,7 +2,7 @@ module.exports = {
   site: {
     brandName: "Siddhivinayak Temple Guesthouse",
     tagline: "Stay • Explore • Experience",
-logoImage: "/assets/logo.png",
+logoImage: "/assets/logo.jpg",
     whatsapp: "919999999999",
     phone: "+91 99999 99999",
     email: "hello@siddhivinayakguesthouse.in",
