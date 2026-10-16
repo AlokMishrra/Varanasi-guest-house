@@ -119,6 +119,16 @@ create table if not exists public.admin_users (
   updated_at  timestamptz not null default now()
 );
 
+-- ---------- admin sessions (serverless-safe sign-ins) --------------------
+-- Serverless hosts run many isolated copies of the code with no shared
+-- memory, so sign-in tokens live here instead of in process memory.
+
+create table if not exists public.admin_sessions (
+  token       text primary key,
+  expires_at  timestamptz not null,
+  created_at  timestamptz not null default now()
+);
+
 -- ---------- media index (mirrors the files in the storage bucket) --------
 
 create table if not exists public.media (
@@ -141,6 +151,7 @@ create index if not exists gallery_sort_order_idx    on public.gallery    (sort_
 create index if not exists offers_sort_order_idx    on public.offers    (sort_order);
 create index if not exists plans_sort_order_idx     on public.travel_plans (sort_order);
 create index if not exists testi_sort_order_idx     on public.testimonials (sort_order);
+create index if not exists admin_sessions_expires_idx on public.admin_sessions (expires_at);
 
 -- =====================================================================
 --  SECURITY
@@ -160,6 +171,7 @@ alter table public.reviews        enable row level security;
 alter table public.bookings       enable row level security;
 alter table public.enquiries      enable row level security;
 alter table public.admin_users    enable row level security;
+alter table public.admin_sessions enable row level security;
 alter table public.media          enable row level security;
 
 -- Intentionally NO policies are created: with RLS enabled and zero policies,

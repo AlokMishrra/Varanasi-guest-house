@@ -62,6 +62,10 @@ The database tables are created once, in the Supabase dashboard:
   3. Paste the contents of  supabase/schema.sql
   4. Press  Run
 
+Re-run the same file any time the schema grows (everything in it is
+"if not exists", so re-running is safe). The admin_sessions table used by
+the cloud deployment was added this way.
+
 To check the connection at any time:
 
   node scripts/supabase-setup.js --test
@@ -69,6 +73,46 @@ To check the connection at any time:
 To copy your existing local content into the database (after step 4):
 
   node scripts/supabase-setup.js --migrate
+
+
+DEPLOYING TO VERCEL (the live website)
+------------------------------------------------------------
+The same code runs both locally (node server.js) and on Vercel
+(serverless functions in api/, same Supabase database). Nothing to
+rewrite per host.
+
+One-time setup in the Vercel dashboard:
+
+  1. Add New Project → Import the GitHub repo
+     (https://github.com/AlokMishrra/Varanasi-guest-house)
+  2. Framework Preset: Other. Build Command: (leave empty).
+     Output Directory: (leave empty).
+  3. Environment Variables — add all four:
+       SUPABASE_URL_REF     siamavpeootgyhiqqqkp
+       SUPABASE_SECRET_KEY  (service-role key from Supabase → Settings → API)
+       SUPABASE_ANON_KEY    (anon key from the same page)
+       SUPABASE_BUCKET      media
+  4. Deploy.
+
+  Use the service-role (secret) key exactly as in the local .env, and keep
+  it in Vercel's environment variables only — never in the code.
+
+After deploy, everything works on your vercel.app address:
+  /                 the website (reads from Supabase)
+  /admin.html       the admin panel (sign in, manage everything)
+  /api/health       should answer {"ok":true,"storage":"supabase",…}
+
+Notes:
+  - The database tables must exist first (see SUPABASE SETUP above,
+    including the admin_sessions table for sign-ins).
+  - Hobby plans cap function request bodies (~4.5 MB): room and gallery
+    photos upload fine; long video clips should be added from the Media
+    Library on the local server or uploaded straight to Supabase Storage.
+  - Your custom domain can be attached in Vercel → Settings → Domains
+    whenever you are ready (it currently points at the GitHub Pages demo,
+    which stays up as a read-only showcase until you move it).
+  - Local development is unchanged: node server.js / START.command /
+    ./scripts/service.sh all still work against the same database.
 
 
 WHAT IS STORED WHERE
@@ -208,6 +252,9 @@ scripts/service.sh     install / start / stop / status of the service
 scripts/run.js         supervisor: restarts the server after a crash
 scripts/self-test.js   full automated test (node scripts/self-test.js)
 scripts/soak.js        stability test (node scripts/soak.js 5)
+api/[...all].js        Vercel serverless entry (all /api/* routes)
+lib/api.js             shared API used by server.js and Vercel
+lib/auth.js            sign-in sessions (database-backed for serverless)
 supabase/schema.sql    database tables (run once in the SQL editor)
 scripts/               setup + migration helper
 lib/supabase.js        Supabase client (fetch based, no dependencies)

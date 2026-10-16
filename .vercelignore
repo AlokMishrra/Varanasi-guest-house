@@ -1,0 +1,20 @@
+# Kept out of the Vercel deployment.
+# (Secrets are safe regardless — .env is git-ignored and never committed.)
+
+# local development & ops
+scripts/
+*.command
+
+# local mirrors / runtime state (Supabase is the source of truth in the cloud)
+data/
+uploads/
+logs/
+public/
+
+# docs & design sources (not needed to serve the site)
+design-reference.png
+README.txt
+
+# never deploy keys
+.env
+.env.example
