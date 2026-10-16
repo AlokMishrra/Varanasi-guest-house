@@ -1362,7 +1362,7 @@ async function browserTests() {
     await api("health");
   } catch {
     console.log(`\n${C.r}The server is not running. Start it first:${C.o}`);
-    console.log(`  ${C.b}node server.js${C.o}\n`);
+    console.log(`  ${C.b}node local-server.js${C.o}\n`);
     process.exit(1);
   }
 

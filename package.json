@@ -3,10 +3,10 @@
   "version": "2.0.0",
   "private": true,
   "description": "Siddhivinayak Temple Guesthouse — website with a full content-management admin panel, online bookings and Supabase storage.",
-  "main": "server.js",
+  "main": "local-server.js",
   "scripts": {
     "start": "node scripts/run.js",
-    "serve": "node server.js",
+    "serve": "node local-server.js",
     "dev": "node --watch scripts/run.js",
     "test": "node scripts/self-test.js",
     "test:api": "node scripts/self-test.js --api",

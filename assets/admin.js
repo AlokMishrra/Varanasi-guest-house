@@ -67,7 +67,7 @@
       '<p class="sub">This address serves a static demo copy of the website — ' +
       "there is no database behind it, so signing in here is not possible.</p>" +
       '<div class="alert info" style="margin:0 0 16px">Run the full version on your ' +
-      "computer with <b>START.command</b> (or <code>node server.js</code>), then open " +
+      "computer with <b>START.command</b> (or <code>node local-server.js</code>), then open " +
       "<b>http://localhost:3000/admin.html</b> and sign in there.</div>" +
       '<a class="btn btn-gold" style="display:block;text-align:center" href="./">← Back to the demo website</a>' +
       "</div>";
@@ -87,7 +87,7 @@
       '<p style="font-size:13px;color:#6b6559;line-height:1.7;margin:0 0 14px">Your content is saved safely on disk. ' +
       "Restart the server to carry on editing.</p>" +
       '<code style="display:block;background:#f4f1ea;border:1px solid #e3ddd0;border-radius:6px;padding:12px;font-size:13px">cd "' +
-      "Varanasi_Guest_House_Final 2" + '"<br>node server.js</code>' +
+      "Varanasi_Guest_House_Final 2" + '"<br>node local-server.js</code>' +
       '<p style="font-size:12px;color:#8a8378;margin:14px 0 0">Or just double-click <b>START.command</b> in the project folder.</p>' +
       "</div>";
     document.body.appendChild(box);

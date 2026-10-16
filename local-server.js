@@ -155,6 +155,10 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+// Only listen when executed directly (`node local-server.js`). If this file
+// is ever imported (bundlers, serverless hosts), it must stay side-effect
+// free so it can never bind a port or take down the process.
+if (require.main === module) {
 server.listen(PORT, () => {
   const { usingSupabase, supabaseRef } = require("./lib/store.js");
   const store_ = usingSupabase ? "Supabase" : "local JSON (no Supabase keys)";
@@ -166,6 +170,7 @@ server.listen(PORT, () => {
   console.log(`  Login    ->  admin / varanasi123  (change it in Settings)`);
   console.log(`  ---------------------------------------------\n`);
 });
+}
 
 // Reject half-open / oversized requests instead of letting sockets pile up.
 server.headersTimeout = 30000;

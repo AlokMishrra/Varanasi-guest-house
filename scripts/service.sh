@@ -83,7 +83,7 @@ case "${1:-status}" in
     launchctl bootout "gui/$(id -u)/$LABEL" >/dev/null 2>&1 || true
     # free the port for the service (kills only this project's own server)
     pkill -f "node $PROJECT_DIR/scripts/run.js" >/dev/null 2>&1 || true
-    pkill -f "node $PROJECT_DIR/server.js" >/dev/null 2>&1 || true
+    pkill -f "node $PROJECT_DIR/local-server.js" >/dev/null 2>&1 || true
     sleep 1
     launchctl bootstrap "gui/$(id -u)" "$PLIST" >/dev/null 2>&1 \
       || launchctl load -w "$PLIST" >/dev/null 2>&1 || true
@@ -99,7 +99,7 @@ case "${1:-status}" in
     launchctl bootout "gui/$(id -u)/$LABEL" >/dev/null 2>&1 \
       || launchctl unload -w "$PLIST" >/dev/null 2>&1 || true
     pkill -f "node $PROJECT_DIR/scripts/run.js" >/dev/null 2>&1 || true
-    pkill -f "node $PROJECT_DIR/server.js" >/dev/null 2>&1 || true
+    pkill -f "node $PROJECT_DIR/local-server.js" >/dev/null 2>&1 || true
     ok "Stopped. Start again anytime with:  ./scripts/service.sh start"
     ;;
 

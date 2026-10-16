@@ -3,14 +3,14 @@
  *
  *   node scripts/run.js
  *
- * Use this instead of `node server.js` when you want the site to stay up:
+ * Use this instead of `node local-server.js` when you want the site to stay up:
  * a crash is recovered from automatically instead of leaving you with a
  * dead localhost.
  */
 const { spawn } = require("child_process");
 const path = require("path");
 
-const SERVER = path.join(__dirname, "..", "server.js");
+const SERVER = path.join(__dirname, "..", "local-server.js");
 const MAX_FAST_RESTARTS = 5;   // avoid a crash loop
 const FAST_RESTART_MS = 3000;
 const RESTART_LOG = path.join(__dirname, "..", "logs", "restarts.log");

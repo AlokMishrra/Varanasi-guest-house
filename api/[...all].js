@@ -1,7 +1,7 @@
 /**
  * Vercel serverless entry point — every /api/* request lands here.
  *
- * The heavy lifting lives in lib/api.js (shared with server.js), so the
+ * The heavy lifting lives in lib/api.js (shared with local-server.js), so the
  * cloud and the local server always behave identically.
  *
  * Notes:
@@ -14,16 +14,36 @@
  *   Supabase Storage instead.
  */
 const { URL } = require("url");
-const { handleApi, sendJson } = require("../lib/api.js");
+
+/** Lazy + guarded: a startup failure becomes a JSON 500, never a dead isolate. */
+let api = null;
+let loadError = null;
+function load() {
+  if (api || loadError) return;
+  try {
+    api = require("../lib/api.js");
+  } catch (err) {
+    loadError = err;
+  }
+}
 
 module.exports = async (req, res) => {
   res.setHeader("X-Content-Type-Options", "nosniff");
+  load();
+  if (loadError) {
+    res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({
+      error: "Function failed to start",
+      detail: String((loadError && loadError.message) || loadError),
+    }));
+    return;
+  }
   try {
-    const url = new URL(req.url, "https://localhost");
-    await handleApi(req, res, url);
+    const url = new URL(req.url || "/api/", "https://localhost");
+    await api.handleApi(req, res, url);
   } catch (err) {
     console.error("API error:", err);
-    if (!res.headersSent) sendJson(res, 500, { error: err.message || "Server error" });
+    if (!res.headersSent) api.sendJson(res, 500, { error: err.message || "Server error" });
     else res.end();
   }
 };

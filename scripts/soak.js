@@ -30,7 +30,7 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 (async () => {
   console.log(`\nSoak test: ${MINUTES} minutes against port ${PORT}\n`);
   const out = fs.openSync("/tmp/soak-server.log", "w");
-  const server = spawn("node", ["server.js"], {
+  const server = spawn("node", ["local-server.js"], {
     cwd: require("path").join(__dirname, ".."),
     env: Object.assign({}, process.env, { PORT: String(PORT) }),
     stdio: ["ignore", out, out],

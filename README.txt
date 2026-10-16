@@ -26,7 +26,7 @@ Start it again:         ./scripts/service.sh start
 Live log file:          logs/service.log
 
 Developers can still run it by hand in a Terminal:
-  node server.js               plain, stops when the window closes
+  node local-server.js         plain, stops when the window closes
   node scripts/run.js          supervised, auto-restarts after a crash
 
 Then open:
@@ -77,7 +77,7 @@ To copy your existing local content into the database (after step 4):
 
 DEPLOYING TO VERCEL (the live website)
 ------------------------------------------------------------
-The same code runs both locally (node server.js) and on Vercel
+The same code runs both locally (node local-server.js) and on Vercel
 (serverless functions in api/, same Supabase database). Nothing to
 rewrite per host.
 
@@ -111,7 +111,7 @@ Notes:
   - Your custom domain can be attached in Vercel → Settings → Domains
     whenever you are ready (it currently points at the GitHub Pages demo,
     which stays up as a read-only showcase until you move it).
-  - Local development is unchanged: node server.js / START.command /
+  - Local development is unchanged: node local-server.js / START.command /
     ./scripts/service.sh all still work against the same database.
 
 
@@ -235,7 +235,7 @@ GOING LIVE
 ------------------------------------------------------------
 This needs a host that runs Node (Railway, Render, DigitalOcean, Fly.io,
 or cPanel with "Setup Node.js App"). Copy this whole folder, set the port
-the host provides, and run `node server.js`.
+the host provides, and run `node local-server.js`.
 
 Before launch, work through the Launch checklist on the admin dashboard:
   1. Replace the demo WhatsApp number      (Settings → Contact)
@@ -253,7 +253,7 @@ scripts/run.js         supervisor: restarts the server after a crash
 scripts/self-test.js   full automated test (node scripts/self-test.js)
 scripts/soak.js        stability test (node scripts/soak.js 5)
 api/[...all].js        Vercel serverless entry (all /api/* routes)
-lib/api.js             shared API used by server.js and Vercel
+lib/api.js             shared API used by local-server.js and Vercel
 lib/auth.js            sign-in sessions (database-backed for serverless)
 supabase/schema.sql    database tables (run once in the SQL editor)
 scripts/               setup + migration helper
@@ -265,6 +265,6 @@ assets/site.css        website styles
 assets/site.js         website rendering + booking / plan forms
 assets/admin.css       admin styles
 assets/admin.js        admin logic
-server.js              backend: API, auth, uploads, static serving
+local-server.js        backend: API, auth, uploads, static serving
 seed-content.js        the original content, used for "Reset to demo"
 .env                   Supabase keys (private, gitignored)

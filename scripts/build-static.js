@@ -2,7 +2,7 @@
  * Build a static snapshot for hosts that cannot run the Node server
  * (e.g. GitHub Pages).
  *
- *   1. Start the server:   node server.js   (or the background service)
+ *   1. Start the server:   node local-server.js   (or the background service)
  *   2. Run:                node scripts/build-static.js
  *   3. Commit the regenerated assets/content.snapshot.json
  *

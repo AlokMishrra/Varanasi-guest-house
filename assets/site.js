@@ -754,7 +754,7 @@
           })
           .catch(function () {
             $("#app").innerHTML =
-              '<div class="boot-loading">Could not load site content. Please start the server with <code>node server.js</code> and open <a href="http://localhost:3000/">http://localhost:3000/</a>.</div>';
+              '<div class="boot-loading">Could not load site content. Please start the server with <code>node local-server.js</code> and open <a href="http://localhost:3000/">http://localhost:3000/</a>.</div>';
           });
       });
   });
