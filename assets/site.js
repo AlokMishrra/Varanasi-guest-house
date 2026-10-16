@@ -63,7 +63,8 @@
     document.title = (site.brandName || "Siddhivinayak Temple Guesthouse") + " | " + (site.tagline || "");
     $("#brandName").textContent = site.brandName || "";
     $("#brandTagline").textContent = site.tagline || "";
-    $("#brandMark").textContent = site.logoMark || "";
+    $("#brandMark").src = site.logoImage || "/assets/logo.png";
+    $("#brandMark").alt = (site.brandName || "Guesthouse") + " logo";
     $("#navBookBtn").textContent = (d.nav && d.nav.ctaText) || "Book Now";
 
     var links = (d.nav && d.nav.links) || [];

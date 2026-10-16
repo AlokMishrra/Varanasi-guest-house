@@ -17,7 +17,7 @@ code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
 .shell{display:flex;min-height:100vh}
 .side{width:246px;flex:none;background:#0f0e0c;color:#cfc8bb;padding:18px 0;position:sticky;top:0;height:100vh;overflow:auto}
 .side-brand{display:flex;align-items:center;gap:10px;padding:6px 20px 18px;border-bottom:1px solid #2a2419;margin-bottom:12px}
-.side-brand .mark{width:36px;height:36px;display:grid;place-items:center;color:var(--gold);font-size:22px;border:1px solid #4a3c22;border-radius:6px}
+.side-brand .mark{width:36px;height:36px;border-radius:50%;object-fit:cover;background:#0d0c0a;display:block;border:1px solid #3a2f1c}
 .side-brand b{color:#f5ecdc;font-size:14px;display:block}
 .side-brand span{font-size:10px;color:#8d8677}
 .side-group{font-size:9px;letter-spacing:2px;color:#6d675c;padding:14px 20px 6px}
